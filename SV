@@ -1,0 +1,893 @@
+/*NOVO PROGRAMA MEDICAO SABESP COM 8 RELOGIOS
+logica 27/11/21 FInalizado*
+Display 
+
+/*********************** Inclusão de bibliotecas ********************/
+#include "WiFi.h"  
+#include "Wire.h"  
+#include "LiquidCrystal_I2C.h" 
+#include "Adafruit_MQTT.h"            
+#include "Adafruit_MQTT_Client.h" 
+
+//#include <esp_task_wdt.h> //WATCHDOG
+
+
+LiquidCrystal_I2C lcd(0x27, 20, 4); //FUNÇÃO DO TIPO "LiquidCrystal_I2C"
+
+float MiliRELOGIO1 = 0;
+float MiliRELOGIO2 = 0;
+float MiliRELOGIO3 = 0;
+float MiliRELOGIO4 = 0;
+float MiliRELOGIO5 = 0;
+float MiliRELOGIO6 = 0;
+float MiliRELOGIO7 = 0;
+float MiliRELOGIO8 = 0;
+
+/******************************* PINOS DE ENTRADA SENSOR ******************/
+#define portaVazao1 GPIO_NUM_32
+#define portaVazao2 GPIO_NUM_33
+#define portaVazao3 GPIO_NUM_25
+#define portaVazao4 GPIO_NUM_26
+#define portaVazao5 GPIO_NUM_27
+#define portaVazao6 GPIO_NUM_14
+#define portaVazao7 GPIO_NUM_23
+#define portaVazao8 GPIO_NUM_19
+
+/******************* Definição de Constantes Saida ****************************/
+
+const int Sole1 = 18;  //solenoide 1                
+const int Sole2 = 5;   //solenoide 2            
+const int Sole3 = 17;  //solenoide 3          
+const int Sole4 = 16;  //solenoide 4
+const int Sole5 = 4;   //solenoide 5
+const int Sole6 = 0;   //solenoide 6
+const int Sole7 = 15;  //solenoide 7
+const int Sole8 = 13;  //solenoide 8
+
+void initserial ();
+
+
+/******************************* VARIAVEIS RELOGIO 1 *************************************************************************/
+ 
+volatile int pulsos_vazao = 0;
+float vazao = 0;
+ 
+unsigned long ultimo_valor_salvo = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando1 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 1 ******************/
+ 
+void IRAM_ATTR Interrupcao(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao1(gpio_num_t Port) {
+  pinMode(portaVazao1, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+/******************************* VARIAVEIS RELOGIO 2 ******************************************************************************/
+ 
+volatile int pulsos_vazao2 = 0;
+float vazao2 = 0;
+ 
+unsigned long ultimo_valor_salvo2 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando2 = 0 ; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 2 ******************/
+ 
+void IRAM_ATTR Interrupcao2(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao2++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao2(gpio_num_t Port) {
+  pinMode(portaVazao2, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao2, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+
+/******************************* VARIAVEIS RELOGIO 3 ******************************************************************************/
+ 
+volatile int pulsos_vazao3 = 0;
+float vazao3 = 0;
+ 
+unsigned long ultimo_valor_salvo3 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando3 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 3 ******************/
+ 
+void IRAM_ATTR Interrupcao3(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao3++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao3(gpio_num_t Port) {
+  pinMode(portaVazao3, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao3, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+/******************************* VARIAVEIS RELOGIO 4 ******************************************************************************/
+ 
+volatile int pulsos_vazao4 = 0;
+float vazao4 = 0;
+ 
+unsigned long ultimo_valor_salvo4 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando4 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 4 ******************/
+ 
+void IRAM_ATTR Interrupcao4(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao4++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao4(gpio_num_t Port) {
+  pinMode(portaVazao4, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao4, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+
+/******************************* VARIAVEIS RELOGIO 5 ******************************************************************************/
+ 
+volatile int pulsos_vazao5 = 0;
+float vazao5 = 0;
+ 
+unsigned long ultimo_valor_salvo5 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando5 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 5 ******************/
+ 
+void IRAM_ATTR Interrupcao5(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao5++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao5(gpio_num_t Port) {
+  pinMode(portaVazao5, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao5, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+
+/******************************* VARIAVEIS RELOGIO 6 ******************************************************************************/
+ 
+volatile int pulsos_vazao6 = 0;
+float vazao6 = 0;
+ 
+unsigned long ultimo_valor_salvo6 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando6 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 6 ******************/
+ 
+void IRAM_ATTR Interrupcao6(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao6++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao6(gpio_num_t Port) {
+  pinMode(portaVazao6, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao6, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+
+/******************************* VARIAVEIS RELOGIO 7 ******************************************************************************/
+ 
+volatile int pulsos_vazao7 = 0;
+float vazao7 = 0;
+ 
+unsigned long ultimo_valor_salvo7 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando7 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 7 ******************/
+ 
+void IRAM_ATTR Interrupcao7(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao7++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao7(gpio_num_t Port) {
+  pinMode(portaVazao7, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao7, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+/******************************* VARIAVEIS RELOGIO 8 ******************************************************************************/
+ 
+volatile int pulsos_vazao8 = 0;
+float vazao8 = 0;
+ 
+unsigned long ultimo_valor_salvo8 = 0; // USADO NA FUNCAO MILLIS 
+ 
+float vazao_somando8 = 0; // VARIAVEL PARA GUARDAR LITROS SOMADOS
+
+/******************************* INTERRUPCAO PARA O RELOGIO 8 ******************/
+ 
+void IRAM_ATTR Interrupcao8(void* arg) { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
+  pulsos_vazao8++;                   //soma a variavel de contagem de pulsos do sensor de fluxo de agua
+  portYIELD_FROM_ISR();
+}
+ 
+void Configurar_interrupcao8(gpio_num_t Port) {
+  pinMode(portaVazao8, INPUT_PULLUP);            //configura pino como entrada
+  gpio_set_intr_type(Port, GPIO_INTR_NEGEDGE);  //tipo de interrupçao
+  gpio_intr_enable(Port);                       //ativa a porta
+//  gpio_install_isr_service(0);                  //instala a interrupçao
+  gpio_isr_handler_add(Port, Interrupcao8, (void*) Port); // oque fazer ao detectar a interupçao
+}
+
+/******************* Configurações da Rede Wi-Fi ***************************/
+
+ //#define WLAN_SSID       "teste"
+ //#define WLAN_PASS       "123456"
+
+
+
+/************************* Configurações Adafruit.io *********************************/
+// desligado IO ADAFRUIT
+
+
+#define AIO_SERVER      "io.adafruit.com"      
+#define AIO_SERVERPORT  1883                   
+#define AIO_USERNAME  "54321"  // SABESP SV     
+#define AIO_KEY       "54321"
+
+/*
+#define AIO_SERVER      "io.adafruit.com"      
+#define AIO_SERVERPORT  1883                   
+#define AIO_USERNAME  "12345_tst" // PAINEL DE TEST   
+#define AIO_KEY       "12345"
+*/
+
+/*************************** Configurações Globais  ***********************************/
+
+WiFiClient client;                                                                       
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);  
+
+long previousMillis = 0; // utilizado para marcar o intervalor de tempo de envio
+
+Adafruit_MQTT_Publish Rel1 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO1"); 
+Adafruit_MQTT_Publish Rel2 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO2"); 
+Adafruit_MQTT_Publish Rel3 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO3"); 
+Adafruit_MQTT_Publish Rel4 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO4"); 
+Adafruit_MQTT_Publish Rel5 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO5"); 
+Adafruit_MQTT_Publish Rel6 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO6"); 
+Adafruit_MQTT_Publish Rel7 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO7"); 
+Adafruit_MQTT_Publish Rel8 = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/RELOGIO8"); 
+
+Adafruit_MQTT_Subscribe zerar = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/zerar");  
+Adafruit_MQTT_Subscribe bloquear = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/bloquear"); 
+
+
+
+/*************************** INICIA A VOID EM BRANCO  ************************************/
+
+void salvar_dados1();
+void salvar_dados2();
+void salvar_dados3();
+void salvar_dados4();
+void salvar_dados5();
+void salvar_dados6();
+void salvar_dados7();
+void salvar_dados8();
+void MQTT_connect();
+
+/*************************** SETUP ************************************/
+
+void setup() {
+
+ //disableCore0WDT(); // Desabilita o WDT do core0
+ //disableCore1WDT(); // se estiver usando o core1 
+
+initSerial();
+habilita_INT(); 
+solenoide();
+initWiFi();
+
+//*** SETUP -- Whatchdog -- *************************************
+
+//  Habilita o watchdog configurando o timeout para 9 segundos
+// esp_task_wdt_init(9, true);
+ //esp_task_wdt_add(NULL);
+
+//esp_task_wdt_isr_user_handler
+
+}
+
+uint32_t x=0;  
+
+/*************************** LOOP ************************************/
+
+void loop() {
+
+//esp_task_wdt_reset(); //WATCHDOG RESTA DE FORMA AUTOMATICA
+
+long tme = millis(); //tempo inicial do loop
+
+float RELOGIO1 = vazao_somando1;
+float RELOGIO2 = vazao_somando2;
+float RELOGIO3 = vazao_somando3;
+float RELOGIO4 = vazao_somando4;
+float RELOGIO5 = vazao_somando5;
+float RELOGIO6 = vazao_somando6;
+float RELOGIO7 = vazao_somando7;
+float RELOGIO8 = vazao_somando8;
+
+salvar_dados1();   //faz verificaçao e salvamento dos dados
+salvar_dados2();   //faz verificaçao e salvamento dos dados
+salvar_dados3();   //faz verificaçao e salvamento dos dados
+salvar_dados4();   //faz verificaçao e salvamento dos dados
+salvar_dados5();   //faz verificaçao e salvamento dos dados
+salvar_dados6();   //faz verificaçao e salvamento dos dados
+salvar_dados7();   //faz verificaçao e salvamento dos dados
+salvar_dados8();   //faz verificaçao e salvamento dos dados
+
+/*************************** Teste de WIFI ********************************************************/
+
+if(WiFi.status() != WL_CONNECTED){            
+
+   Serial.println();
+   Serial.println("VERIFIQUE WIFI");  
+   lcd.init();   // INICIALIZA O DISPLAY LCD
+   lcd.clear(); 
+   lcd.backlight(); // HABILITA O BACKLIGHT (LUZ DE FUNDO)
+   lcd.print("VERIFIQUE WIFI");
+   delay(500);
+  
+  
+  lcd.clear(); 
+  lcd.backlight(); // HABILITA O BACKLIGHT (LUZ DE FUNDO)
+  lcd.setCursor(0, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R1 "); lcd.print(RELOGIO1); 
+  lcd.setCursor(0, 1); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R2 "); lcd.print(RELOGIO2); 
+  lcd.setCursor(0, 2); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R3 "); lcd.print(RELOGIO3); 
+  lcd.setCursor(0, 3); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R4 "); lcd.print(RELOGIO4);  
+  lcd.setCursor(10, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R5 "); lcd.print(RELOGIO5); 
+  lcd.setCursor(10, 1); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R6 "); lcd.print(RELOGIO6); 
+  lcd.setCursor(10, 2); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R7 "); lcd.print(RELOGIO7); 
+  lcd.setCursor(10, 3); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R8 "); lcd.print(RELOGIO8);
+  delay(1000);
+
+           } else {
+ 
+  mqtt.subscribe(&zerar);   
+  mqtt.subscribe(&bloquear); 
+  
+   Serial.println();
+   Serial.print("Conectando-se na rede   "); Serial.println(WLAN_SSID);
+   Serial.print(F("IP address:           ")); Serial.println(WiFi.localIP());
+   Serial.println();
+
+/*************************** Texto do Display ********************************************************/
+
+  lcd.init();   // INICIALIZA O DISPLAY LCD
+  lcd.backlight(); // HABILITA O BACKLIGHT (LUZ DE FUNDO) 
+  lcd.setCursor(0, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R1 "); lcd.print(RELOGIO1); 
+  lcd.setCursor(0, 1); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R2 "); lcd.print(RELOGIO2); 
+  lcd.setCursor(0, 2); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R3 "); lcd.print(RELOGIO3); 
+  lcd.setCursor(0, 3); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R4 "); lcd.print(RELOGIO4);  
+  lcd.setCursor(10, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R5 "); lcd.print(RELOGIO5); 
+  lcd.setCursor(10, 1); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R6 "); lcd.print(RELOGIO6); 
+  lcd.setCursor(10, 2); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R7 "); lcd.print(RELOGIO7); 
+  lcd.setCursor(10, 3); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+  lcd.print("R8 "); lcd.print(RELOGIO8);
+
+  MQTT_connect();
+
+           }
+
+
+/*************************** publish MQTT ********************************************************/
+  
+  mqtt.processPackets(500);
+ 
+  // Função responsável por ler e enviar o valor do sensor a cada 5 segundos
+  unsigned long currentMillis = millis();
+  
+  if (currentMillis - previousMillis > 25500 && mqtt.connected()) {
+    previousMillis = currentMillis; 
+  
+    if (! Rel1.publish(RELOGIO1))        
+    Serial.println(F("relogio1 falha")); 
+  else                                        
+   Serial.println(F("relogio1 ok!")); 
+  
+    if (! Rel2.publish(RELOGIO2))        
+    Serial.println(F("relogio2 falha")); 
+   else                                        
+   Serial.println(F("relogio2 ok!")); 
+  
+    if (! Rel3.publish(RELOGIO3))        
+    Serial.println(F("relogio3 falha")); 
+  else                                        
+   Serial.println(F("relogio3 ok!")); 
+  
+    if (! Rel4.publish(RELOGIO4))        
+    Serial.println(F("relogio4 falha")); 
+  else                                        
+   Serial.println(F("relogio4 ok!")); 
+    
+    if (! Rel5.publish(RELOGIO5))        
+    Serial.println(F("relogio5 falha")); 
+  else                                        
+   Serial.println(F("relogio5 ok!")); 
+  
+    if (! Rel6.publish(RELOGIO6))        
+    Serial.println(F("relogio6 falha")); 
+  else                                        
+   Serial.println(F("relogio6 ok!")); 
+    
+    if (! Rel7.publish(RELOGIO7))        
+    Serial.println(F("relogio7 falha")); 
+  else                                        
+   Serial.println(F("relogio7 ok!")); 
+        
+    if (! Rel8.publish(RELOGIO8))        
+    Serial.println(F("relogio8 falha")); 
+  else                                        
+   Serial.println(F("relogio8 ok!")); 
+
+  }
+  
+/*************************** subscription MQTT ********************************************************/
+
+ Adafruit_MQTT_Subscribe *subscription;                
+  while ((subscription = mqtt.readSubscription(7000))) { 
+
+    if (subscription == &zerar) {      
+      
+      if (strcmp((char *)zerar.lastread, "Reset") == 0) { 
+         digitalWrite(Sole1, LOW);                        
+         Serial.println(F("Reset solicitado"));                 
+         lcd.setCursor(0, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+         lcd.clear(); 
+         lcd.print(F("Reset solicitado"));            
+         Serial.println(F("dia = 1"));               
+                                                        
+                 vazao_somando1=0;
+                 vazao_somando2=0;
+                 vazao_somando3=0;
+                 vazao_somando4=0;
+                 vazao_somando5=0;
+                 vazao_somando6=0;
+                 vazao_somando7=0;
+                 vazao_somando8=0;
+                                                         
+                                                           
+                                                           }
+
+      if (strcmp((char *)zerar.lastread, "NReset") == 0) { 
+        digitalWrite(Sole1, HIGH);   
+         Serial.println(F("RESET ok"));   
+         lcd.setCursor(0, 0); //SETA A POSIÇÃO EM QUE O CURSOR INCIALIZA(LINHA 1)
+         lcd.clear(); 
+         lcd.print(F("RESET ok"));
+         Serial.println(F("dia = 0 "));    
+         
+
+                                                         }
+                                }
+  
+
+    if (subscription == &bloquear) {       
+      
+      if (strcmp((char *)bloquear.lastread, "Ligar") == 0) { 
+        //digitalWrite(Sole2, LOW); 
+        Serial.println(F("LIGAR"));                   
+                                                        }
+      if (strcmp((char *)bloquear.lastread, "Desligar") == 0) { 
+        //digitalWrite(Sole2, HIGH);
+        Serial.println(F("DESLIGAR"));  
+                                                           }
+                                 }
+         
+  }
+
+  if(! mqtt.ping()) {      
+    mqtt.disconnect();    
+                    }
+
+
+
+
+
+  
+/*************************** Logica de fechamento dos RELOGIOS ********************************************************/
+
+if(RELOGIO1 + RELOGIO2 + RELOGIO3 + RELOGIO4 + RELOGIO5 + RELOGIO6 + RELOGIO7 + RELOGIO8 < 90680){
+
+           if(RELOGIO1 < 10000){          // Logica ( R1-R7 = B4 / R2-R8 = B3 / R4-R6 = B2 / R3-R5 = B1 )
+              digitalWrite(Sole1, LOW); 
+              digitalWrite(Sole2, HIGH);
+            } else {
+              digitalWrite(Sole1, HIGH);
+            
+              if(RELOGIO7 < 12670){
+                digitalWrite(Sole2, LOW);
+              } else {
+                digitalWrite(Sole2, HIGH);
+              }            
+                           }
+
+           if(RELOGIO2 < 10000){
+              digitalWrite(Sole3, LOW);
+              digitalWrite(Sole4, HIGH);
+            } else {
+              digitalWrite(Sole3, HIGH);
+            
+              if(RELOGIO8 < 12670){
+              digitalWrite(Sole4, LOW);
+              } else {
+              digitalWrite(Sole4, HIGH);
+              }
+                           }
+                     
+           if(RELOGIO4 < 10000){          //colocar 10.000
+              digitalWrite(Sole5, LOW);
+              digitalWrite(Sole6, HIGH);
+            } else {
+              digitalWrite(Sole5, HIGH);
+           
+              if(RELOGIO6 < 12670){
+                digitalWrite(Sole6, LOW);
+              } else {
+               digitalWrite(Sole6, HIGH);
+              } 
+                           }
+
+          if(RELOGIO3 < 10000){
+              digitalWrite(Sole7, LOW);
+              digitalWrite(Sole8, HIGH);
+            } else {
+              digitalWrite(Sole7, HIGH);
+           
+              if(RELOGIO5 < 12670){
+                digitalWrite(Sole8, LOW);
+              } else {
+                digitalWrite(Sole8, HIGH);
+              } 
+                         }
+
+      Serial.println(" Abaixo de 90 ");
+      Serial.println();
+   
+    } else {
+          
+           if(RELOGIO1 < 20000){          // Logica ( R1-R7 = B4 / R2-R8 = B3 / R4-R6 = B2 / R3-R5 = B1 )
+              digitalWrite(Sole1, LOW); 
+              digitalWrite(Sole2, HIGH);
+            } else {
+              digitalWrite(Sole1, HIGH);
+            
+              if(RELOGIO7 < 22670){
+                digitalWrite(Sole2, LOW);
+              } else {
+                digitalWrite(Sole2, HIGH);
+              }            
+                           }
+
+           if(RELOGIO2 < 20000){
+              digitalWrite(Sole3, LOW);
+              digitalWrite(Sole4, HIGH);
+            } else {
+              digitalWrite(Sole3, HIGH);
+            
+              if(RELOGIO8 < 22670){
+              digitalWrite(Sole4, LOW);
+              } else {
+              digitalWrite(Sole4, HIGH);
+              }
+                           }
+                     
+           if(RELOGIO4 < 20000){          //colocar 10.000
+              digitalWrite(Sole5, LOW);
+              digitalWrite(Sole6, HIGH);
+            } else {
+              digitalWrite(Sole5, HIGH);
+           
+              if(RELOGIO6 < 22670){
+                digitalWrite(Sole6, LOW);
+              } else {
+               digitalWrite(Sole6, HIGH);
+              } 
+                           }
+
+          if(RELOGIO3 < 20000){
+              digitalWrite(Sole7, LOW);
+              digitalWrite(Sole8, HIGH);
+            } else {
+              digitalWrite(Sole7, HIGH);
+           
+              if(RELOGIO5 < 22670){
+                digitalWrite(Sole8, LOW);
+              } else {
+                digitalWrite(Sole8, HIGH);
+              } 
+                         }
+
+      Serial.println(" Abaixo de 90 ");
+      Serial.println();
+      
+       }
+
+    Serial.print("tempo passado dentro do loop (ms) = ");
+    tme = millis() - tme; //calcula o tempo (atual - inicial)
+    Serial.println(tme);
+    Serial.println();
+}
+
+
+/************************** SALVA DADOS RELOGIO 1 ***************************************/
+ 
+void salvar_dados1() {
+  if ((millis() - ultimo_valor_salvo) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao = pulsos_vazao / 5.5 ;
+    pulsos_vazao = 0;
+    MiliRELOGIO1 = vazao / 60; // quantidade de litros para mts cubico deve ser divido por 1000
+    vazao_somando1 = vazao_somando1 + MiliRELOGIO1; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 1 "); Serial.print(MiliRELOGIO1); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 1 "); Serial.print(vazao_somando1); Serial.println(" litros/Segundo");
+   }
+
+ /************************** SALVA DADOS RELOGIO 2 ***************************************/
+ 
+void salvar_dados2() {
+  if ((millis() - ultimo_valor_salvo2) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo2 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao2 = pulsos_vazao2 / 5.5 ;
+    pulsos_vazao2 = 0;
+    MiliRELOGIO2 = vazao2 / 60;
+    vazao_somando2 = vazao_somando2 + MiliRELOGIO2; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 2 "); Serial.print(MiliRELOGIO2); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 2 "); Serial.print(vazao_somando2); Serial.println(" litros/Segundo");
+  }
+
+/************************** SALVA DADOS RELOGIO 3 ***************************************/
+ 
+void salvar_dados3() {
+  if ((millis() - ultimo_valor_salvo3) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo3 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao3 = pulsos_vazao3 / 5.5 ;
+    pulsos_vazao3 = 0;
+    MiliRELOGIO3 = vazao3 / 60; // quantidade de litros para mts cubico deve ser divido por 1000
+    vazao_somando3 = vazao_somando3 + MiliRELOGIO3; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 3 "); Serial.print(MiliRELOGIO3); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 3 "); Serial.print(vazao_somando3); Serial.println(" litros/Segundo");
+   }
+
+/************************** SALVA DADOS RELOGIO 4 ***************************************/
+ 
+void salvar_dados4() {
+  if ((millis() - ultimo_valor_salvo4) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo4 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao4 = pulsos_vazao4 / 5.5 ;
+    pulsos_vazao4 = 0;
+    MiliRELOGIO4 = vazao4 / 60;
+    vazao_somando4 = vazao_somando4 + MiliRELOGIO4; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 4 "); Serial.print(MiliRELOGIO4); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 4 "); Serial.print(vazao_somando4); Serial.println(" litros/Segundo");
+   }
+
+ 
+/************************** SALVA DADOS RELOGIO 5 ***************************************/
+ 
+void salvar_dados5() {
+  if ((millis() - ultimo_valor_salvo5) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo5 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao5 = pulsos_vazao5 / 5.5 ;
+    pulsos_vazao5 = 0;
+    MiliRELOGIO5 = vazao5 / 60;
+    vazao_somando5 = vazao_somando5 + MiliRELOGIO5; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 5 "); Serial.print(MiliRELOGIO5); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 5 "); Serial.print(vazao_somando5); Serial.println(" litros/Segundo");
+   }
+
+/************************** SALVA DADOS RELOGIO 6 ***************************************/
+ 
+void salvar_dados6() {
+  if ((millis() - ultimo_valor_salvo6) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo6 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao6 = pulsos_vazao6 / 5.5 ;
+    pulsos_vazao6 = 0;
+    MiliRELOGIO6 = vazao6 / 60;
+    vazao_somando6 = vazao_somando6 + MiliRELOGIO6; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 6 "); Serial.print(MiliRELOGIO6); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 6 "); Serial.print(vazao_somando6); Serial.println(" litros/Segundo");
+   }
+
+  /************************** SALVA DADOS RELOGIO 7 ***************************************/
+ 
+void salvar_dados7() {
+  if ((millis() - ultimo_valor_salvo7) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo7 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao7 = pulsos_vazao7 / 5.5 ;
+    pulsos_vazao7 = 0;
+    MiliRELOGIO7 = vazao7 / 60;
+    vazao_somando7 = vazao_somando7 + MiliRELOGIO7; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 7 "); Serial.print(MiliRELOGIO7); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 7 "); Serial.print(vazao_somando7); Serial.println(" litros/Segundo");
+   }
+
+  /************************** SALVA DADOS RELOGIO 8 ***************************************/
+ 
+void salvar_dados8() {
+  if ((millis() - ultimo_valor_salvo8) > 1000) { // caso ja tenha passado 1 segundo do ultimo dado aferido e salvo
+    ultimo_valor_salvo8 = millis();
+    
+    //converte a quantia de pulsos que o sensor mandou para a vazao da agua em litros por minuto
+    
+    vazao8 = pulsos_vazao8 / 5.5 ;
+    pulsos_vazao8 = 0;
+    MiliRELOGIO8 = vazao8 / 60;
+    vazao_somando8 = vazao_somando8 + MiliRELOGIO8; // calcula a vazao total do dia
+   }
+ 
+    // mostra o valor da leitura do sensor
+    Serial.print(" Sensor de Vazao esta registrando 8 "); Serial.print(MiliRELOGIO8); Serial.println(" litros/Segundo");
+    Serial.print(" Sensor de Vazao SOMADO 8 "); Serial.print(vazao_somando8); Serial.println(" litros/Segundo");
+   }
+
+void initWiFi() {
+  
+  WiFi.begin(WLAN_SSID, WLAN_PASS);  
+  WiFi.status();
+   Serial.println("INICIALIZANDO");
+   Serial.println("Conectando-se na rede "); Serial.println(WLAN_SSID);
+   Serial.println(F("IP address: ")); Serial.println(WiFi.localIP());
+                }
+/*************************** Conexao Serial  ************************************/
+
+void initSerial(){
+ Serial.begin(115200);  
+  delay(10);  
+Serial.println(F("SERIAL UP")); 
+                  }
+
+/*************************** pinos da solenoide  ************************************/
+void solenoide() {  
+  pinMode(Sole1, OUTPUT); 
+  pinMode(Sole2, OUTPUT); 
+  pinMode(Sole3, OUTPUT); 
+  pinMode(Sole4, OUTPUT); 
+  pinMode(Sole5, OUTPUT);   
+  pinMode(Sole6, OUTPUT);  
+  pinMode(Sole7, OUTPUT);  
+  pinMode(Sole8, OUTPUT);
+                 }
+
+/*************************** INTERRUPCAO PARA CONTAR PULSOS  ************************************/
+
+  void habilita_INT(){
+  Configurar_interrupcao1((gpio_num_t) portaVazao1); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao2((gpio_num_t) portaVazao2); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao3((gpio_num_t) portaVazao3); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao4((gpio_num_t) portaVazao4); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao5((gpio_num_t) portaVazao5); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao6((gpio_num_t) portaVazao6); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao7((gpio_num_t) portaVazao7); //chama a funçao que ira configurar a interrupçao
+  Configurar_interrupcao8((gpio_num_t) portaVazao8); //chama a funçao que ira configurar a interrupçao
+                     }
+
+
+
+/*************************** MQTT CONNECT ********************************************************/
+
+  void MQTT_connect() {
+  
+  int8_t ret;
+ 
+  if (mqtt.connected()) {
+    return;
+  }
+ 
+  Serial.println("Conectando-se ao broker mqtt...");
+  ret = mqtt.connect();
+  delay(500);
+ 
+  uint8_t num_tentativas = 1000000;
+
+  /*  
+  while ((ret = mqtt.connect()) != 0) {
+    Serial.println(mqtt.connectErrorString(ret));
+    Serial.println("Falha ao se conectar. Possivel falta de WIFI");
+    mqtt.disconnect();
+    delay(5000);
+    num_tentativas--;
+
+   lcd.clear(); 
+   lcd.backlight(); // HABILITA O BACKLIGHT (LUZ DE FUNDO)
+   lcd.print("SEM WIFI");
+
+    
+     if (num_tentativas == 0) {
+      Serial.println("Seu ESP será resetado.");
+      while (1); 
+    }    
+  }*/
+ 
+  Serial.println("Conectado ao broker com sucesso."); 
+}
